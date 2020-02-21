@@ -1,62 +1,93 @@
 const fs = require('fs');
-const marked = require ('marked');
-const fetch = require('node-fetch');
-
-// const mdFromato = ( path =>{
-//     if (path.slice(-3) == '.md'){
-//         return true;
-//     }else {
-//         return false;
-//     }
-// })
+const marked = require('marked');
+const FileHound = require('filehound');
+const fetchUrl = require('fetch').fetchUrl;
+const pathMd =require('path');
 
 
-//leer archivo .md
-const readMd = (path=>{
-    return new Promise((resolve,reject)=>{
-        fs.readFile(path,'utf-8',(err,data)=>{
-            if (err){
-                reject (new Error ("No hemos encontrado el archivo " + path))
-
-            }
-            resolve(data)
-            console.log(data)
+//filehound nos ayuda a encontrar archivo md dentro de un directorio 
+const mdLin = (path => {
+    return new Promise((resolve, reject) => {
+        FileHound.create()
+            .paths(path)
+            .ext('md')
+            .find()
+            .then(
+                file => {
+                    if (file.length !== 0) {
+                        resolve(file)
+                        console.log(file)
+                    }
+                }
+            )
+            .catch(err => {
+                reject(new Error("Esta ruta no existe"))
+            })
     })
 })
-})
 
-//obtener links de archivo 
+//lee los archivos
 
-// const searchLink = (path =>{
-//     return new Promise((resolve,reject)=>{
-//         readMd(path).then(result =>{
-//             let links =[];
-//             const renderer = new marked.Renderer();
-//             renderer.links =function(href, title, text){
-                
-//                 link.push({
-//                     //que encuentre url
-//                     href: href,
-//                     //el texto que esta en el link
-//                     text:text,
-//                     //ruta del archivo donde encuentre el link
-//                     file : path })
+const readMdFile = (path => {
+    return new Promise ((resolve, reject) => {
+      fs.readFile(path, 'utf-8',(error, file) => {
+        if(error){
+          reject(new Error("Hubo un error en el archivo " + pathMd));
+        };
+        resolve(file);
+      });
+    });
+  });
+  
+  //obtiene links de un  archivo 
+  const mdLinks = (pathMd => {
+    const links = [];
+    return new Promise ((resolve, reject) => {
+      readMdFile(pathMd)
+      .then(res =>{
+        const renderer = new marked.Renderer();
+        renderer.link = function(href, title, text) {
+          links.push({
+              //encuentra la url 
+            href: href,
+            //el texto que tiene el link
+            text: text,
+            //ruta del archivo donde encuenra el limk
+            file: pathMd,
+          });
+       
+        };
+        marked(res, { renderer: renderer });
+        console.log(links)
+        const statusProms = links.map(link => linkStatus(link.href));
+        Promise.all(statusProms)
+        .then(linksRes => {
+          resolve(linksRes)
+        });
+      })
+      .catch(err => {
+        reject(err)
+      } )
+    })
+  })
+  
+  let foundLinks = mdLinks(pathMd).then(console.log)
+  const linkStatus = (url) => {
+    return new Promise((resolve,reject) => {
+      fetchUrl(url, (error, meta, body) => {
+        if (error) {
+            reject(error)
+          }else {
+            resolve(meta.status)
+          }
+            })
+    })
+  }
 
-//             }
-//             //nos muestra el resultado y devulve un links
-//             marked(result,{renderer:renderer});
-//             resolve(link)
-//             console.log(link)
 
-//          })
-//          .catch(error=>{
-//              reject(error)
-//          })
-//      })
-//     })
-
-// searchLink(process.argv[2])
-// module.exports= {
-//     mdLinks
-// }
-        
+  mdLin(process.argv[2])
+module.exports = {
+    mdLinks,
+    mdLin,
+    foundLinks,
+}
