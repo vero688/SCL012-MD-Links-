@@ -20,14 +20,3 @@ if(element == "--stats" || element == "-s" ){
 }
 })
 
-// mdLinks.mdLinks(path,options).then(res =>{
-//     if (options.validate && options.stats){
-//         return console.log(chalk.bgblue("Total Links: " + res.total) + "\n" + chalk.bgGreen("Ok Links:" + res.ok) + "\n" + chalk.bgRed("Broken Links: " + res.bronken))
-//     }
-
-//     if (options.validate){
-//         if (res.length === 0){
-//             return
-//         }
-//     }
-// })
